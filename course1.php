@@ -348,15 +348,23 @@ img { display: block; max-width: 100%; }
 }
 .hero {
     background: linear-gradient(130deg, #5b52e8 0%, #7c6ff5 50%, #a78bfa 100%);
-    padding: 56px 0 44px;
-    margin-bottom: 36px;
+    padding: 6px 0 4px;
+    margin-bottom: 10px;
+    height: 12rem;
+    justify-items:center;
 }
 .hero-inner {
     max-width: 1180px;
     margin: 0 auto;
     padding: 0 24px;
 }
-.hero-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.hero-meta { display: flex; 
+    align-items: center; 
+    gap: 5px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    margin-left:5rem;
+ }
 .badge {
     display: inline-flex; align-items: center; gap: 5px;
     background: rgba(255,255,255,0.2);
@@ -374,9 +382,10 @@ img { display: block; max-width: 100%; }
     font-size: clamp(22px, 4vw, 40px);
     font-weight: 700; line-height: 1.2;
     color: #fff;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+    text-align:center;
 }
-.hero-desc { color: rgba(255,255,255,0.82); max-width: 640px; margin-bottom: 24px; font-size: 15px; }
+.hero-desc { color: rgba(255,255,255,0.82); max-width: 640px; margin-bottom: 15px; text-align:center;font-size: 15px; }
 .hero-stats {
     display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
     font-size: 13px; color: rgba(255,255,255,0.75);
@@ -602,10 +611,10 @@ img { display: block; max-width: 100%; }
     border-radius: var(--radius-md);
     padding: 14px 12px; text-align: center;
     border: 1px solid var(--border);
-    border-top: 3px solid var(--accent);
+    border: 1px solid var(--accent);
 }
-.quiz-stat-box.green { border-top-color: var(--green); }
-.quiz-stat-box.red   { border-top-color: var(--red); }
+.quiz-stat-box.green { border: var(--green); }
+.quiz-stat-box.red   { border: var(--red); }
 .quiz-stat-box i { font-size: 1.1rem; color: var(--accent); margin-bottom: 6px; display: block; }
 .quiz-stat-box.green i { color: var(--green); }
 .quiz-stat-box.red i { color: var(--red); }
@@ -616,8 +625,9 @@ img { display: block; max-width: 100%; }
 .activity-item {
     padding: 12px 14px;
     border-radius: 10px;
-    border-left: 4px solid var(--accent);
+    border: 1px solid var(--accent);
     background: var(--surface2);
+    box-shadow:0px 0px 2px ;
     margin: 0 22px 10px;
     transition: transform 0.2s;
 }
@@ -778,7 +788,7 @@ img { display: block; max-width: 100%; }
 <section class="hero">
     <div class="hero-inner">
         <div class="hero-meta">
-            <span class="badge">📚 Course</span>
+            <span class="badge"> Course</span>
             <?php if ($progress >= 90): ?>
                 <span class="badge badge-green">✓ Completed</span>
             <?php elseif ($progress > 0): ?>
@@ -798,11 +808,11 @@ img { display: block; max-width: 100%; }
                 </span>
                 <span class="dot"></span>
             <?php endif; ?>
-            <span>🎬 <?= $video_count ?> videos</span>
+            <span><?= $video_count ?> videos</span>
             <span class="dot"></span>
-            <span>📄 <?= $note_count ?> notes</span>
+            <span> <?= $note_count ?> notes</span>
             <span class="dot"></span>
-            <span>📝 <?= $quiz_count ?> quizzes</span>
+            <span><?= $quiz_count ?> quizzes</span>
         </div>
     </div>
 </section>

@@ -170,7 +170,7 @@ body {
 }
 .eyebrow::before {
     content: '';
-    display: block; width: 18px; height: 2px;
+    display: block; 
     background: var(--acc2); border-radius: 2px;
 }
 .page-header h1 { font-size: 26px; font-weight: 700; line-height: 1.2; }

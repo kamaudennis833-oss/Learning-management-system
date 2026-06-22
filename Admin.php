@@ -1536,7 +1536,7 @@ textarea { resize: vertical; min-height: 90px; }
                         <td><?= htmlspecialchars($v['course']) ?></td>
                         <td><strong><?= htmlspecialchars($v['title']) ?></strong></td>
                         <td><span class="badge badge-<?= $v['access_type']=='free'?'success':'warning' ?>"><?= ucfirst($v['access_type']) ?></span></td>
-                        <td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= htmlspecialchars($v['description']) ?></td>
+                        <td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= htmlspecialchars($v['description'] ?? 'No description available') ?></td>
                         <td>
                             <a href="?view=<?= $v['id'] ?>" class="btn btn-primary btn-sm"><i class="fas fa-play"></i> Watch</a>
                             <?php if(in_array($user_role ?? 'admin',['admin','teacher'])): ?>

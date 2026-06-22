@@ -648,7 +648,7 @@ img { max-width: 100%; }
     border-radius: var(--radius);
     padding: 22px 18px;
     box-shadow: var(--shadow);
-    border-top: 3px solid var(--blue);
+    border: 1px solid var(--blue);
     transition: transform var(--transition), box-shadow var(--transition);
 }
 .stat-box:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,0.10); }
@@ -677,7 +677,7 @@ img { max-width: 100%; }
 .activity-item {
     padding: 14px 16px;
     border-radius: 10px;
-    border-left: 4px solid var(--blue);
+    border: 1px solid var(--blue);
     background: var(--gray-100);
     margin-bottom: 12px;
     transition: transform var(--transition);
@@ -944,7 +944,7 @@ img { max-width: 100%; }
 === -->
 <div id="dashboardContent" class="section">
     <div class="page-header">
-        <h1>Welcome back, <?= htmlspecialchars($profile['full_name'] ?? 'Student') ?> 👋</h1>
+        <h1>Welcome back, <?= htmlspecialchars($profile['full_name'] ?? 'Student') ?> </h1>
         <p>Track your learning progress and manage your courses.</p>
     </div>
 
