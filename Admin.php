@@ -574,12 +574,13 @@ body {
 .admin-profile {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px 12px 6px 6px;
-    border-radius: 40px;
+    gap: 5px;
+    padding: 8px 10px 1px 15px;
+    border-radius: 30px;
     border: 1px solid var(--border);
     cursor: pointer;
     transition: .2s;
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
 }
 .admin-profile:hover { border-color: var(--primary-light); }
 .admin-profile img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
@@ -1087,9 +1088,9 @@ textarea { resize: vertical; min-height: 90px; }
             <div class="topbar-icon"><i class="fas fa-search"></i></div>
             <div class="topbar-icon"><i class="fas fa-bell"></i></div>
             <div class="admin-profile">
-                <img src="https://i.pravatar.cc/100" alt="Admin">
+                
                 <div class="info">
-                    <h4>System Admin</h4>
+                    <h4>System</h4>
                     <p>Administrator</p>
                 </div>
             </div>
@@ -1352,7 +1353,7 @@ textarea { resize: vertical; min-height: 90px; }
     <div class="topbar">
         <h1>Add Teacher</h1>
         <div class="topbar-right">
-            <div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div>
+            <div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div>
         </div>
     </div>
 
@@ -1383,7 +1384,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="coursesSection" style="display:none;">
     <div class="topbar">
         <h1>Course Management</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px;">
@@ -1482,7 +1483,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="videoSection" style="display:none;">
     <div class="topbar">
         <h1>Video Management</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <div class="form-card">
@@ -1562,7 +1563,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="quizeSection" style="display:none;">
     <div class="topbar">
         <h1>Quiz Management</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <div class="mini-stats">
@@ -1677,7 +1678,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="noteSection" style="display:none;">
     <div class="topbar">
         <h1>Notes Management</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <div class="form-card" style="max-width:600px;">
@@ -1731,7 +1732,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="announcementSection" style="display:none;">
     <div class="topbar">
         <h1>Announcements</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <div class="form-card" style="max-width:600px;">
@@ -1781,7 +1782,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="enrollmentSection" style="display:none;">
     <div class="topbar">
         <h1>Enrollment Management</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <!-- BUG FIX: Fetch enrollments fresh for this section -->
@@ -1833,7 +1834,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="ticketSection" style="display:none;">
     <div class="topbar">
         <h1>Support Tickets</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <?php
@@ -1894,7 +1895,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="paymentSection" style="display:none;">
     <div class="topbar">
         <h1>Payment Management</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
@@ -1992,7 +1993,7 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="studentsSection" style="display:none;">
     <div class="topbar">
         <h1>Student Management</h1>
-        <div class="topbar-right"><div class="admin-profile"><img src="https://i.pravatar.cc/100" alt="Admin"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
+        <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
     <?php if(isset($_SESSION['success'])): ?>
@@ -2001,7 +2002,7 @@ textarea { resize: vertical; min-height: 90px; }
     <?php endif; ?>
 
     <div class="table-section">
-        <div class="table-header"><h2><i class="fas fa-user-graduate"></i> Student Records</h2></div>
+        <div class="table-header"><h2><i class="fas fa-user-graduate"></i> Records</h2></div>
         <div class="table-wrap">
             <table>
                 <thead><tr><th>ID</th><th>Full Name</th><th>Email</th><th>Phone</th><th>Registered</th><th>Status</th><th>Actions</th></tr></thead>

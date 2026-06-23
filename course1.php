@@ -139,6 +139,44 @@ if (isset($_POST['action'])) {
         exit;
     }
 
+    /* === NOTE PROGRESS TRACKING ===
+       Tracks: that a note was opened, and how many seconds it stayed open
+       (heartbeat from the client every few seconds). A note is considered
+       "completed" once the student has spent at least NOTE_COMPLETE_SECONDS
+       with it open. */
+    if ($_POST['action'] === 'save_note_progress' && $user_id) {
+        define('NOTE_COMPLETE_SECONDS', 30);
+
+        $note_id = intval($_POST['note_id']);
+        $seconds = max(0, intval($_POST['seconds']));
+
+        if ($note_id) {
+            /* Make sure the note belongs to this course before recording anything */
+            $check = $conn->prepare("SELECT id FROM notes WHERE id = ? AND course_id = ?");
+            $check->bind_param("ii", $note_id, $course_id);
+            $check->execute();
+            $valid_note = $check->get_result()->fetch_assoc();
+            $check->close();
+
+            if ($valid_note) {
+                $completed = ($seconds >= NOTE_COMPLETE_SECONDS) ? 1 : 0;
+                $stmt = $conn->prepare("
+                    INSERT INTO note_progress (user_id, note_id, opened, seconds_viewed, completed)
+                    VALUES (?, ?, 1, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        opened         = 1,
+                        seconds_viewed = GREATEST(seconds_viewed, VALUES(seconds_viewed)),
+                        completed      = GREATEST(completed, VALUES(completed)),
+                        updated_at     = CURRENT_TIMESTAMP
+                ");
+                $stmt->bind_param("iiii", $user_id, $note_id, $seconds, $completed);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+        exit;
+    }
+
     if ($_POST['action'] === 'add_review' && $user_id) {
         $review_course_id = intval($_POST['course_id'] ?? $course_id);
         $rating           = min(5, max(1, intval($_POST['rating'])));
@@ -176,22 +214,6 @@ $course_query = mysqli_query($conn, "
 if (!$course_query || mysqli_num_rows($course_query) === 0) die("Course not found");
 $course = mysqli_fetch_assoc($course_query);
 
-/* === PROGRESS === */
-$progress_query = mysqli_query($conn, "
-    SELECT IFNULL(AVG(vp.watched_percentage), 0) AS progress
-    FROM video_progress vp
-    JOIN course_contents cc ON cc.id = vp.content_id
-    WHERE vp.user_id = $user_id AND cc.course_id = $course_id
-");
-$progress = 0;
-if ($progress_query) $progress = (int)round(mysqli_fetch_assoc($progress_query)['progress'] ?? 0);
-
-/* === RATING === */
-$rating_query = mysqli_query($conn, "SELECT ROUND(AVG(rating),1) AS avg_rating, COUNT(*) AS total FROM course_reviews WHERE course_id = $course_id");
-$rating_data  = mysqli_fetch_assoc($rating_query);
-$avg_rating   = $rating_data['avg_rating'] ?? 0;
-$total_ratings = $rating_data['total'] ?? 0;
-
 /* === NOTES === */
 $notes = mysqli_query($conn, "SELECT * FROM notes WHERE course_id = $course_id ORDER BY id DESC");
 
@@ -216,6 +238,68 @@ if ($contents) {
 $video_count = mysqli_num_rows($videos);
 $note_count  = mysqli_num_rows($notes);
 $quiz_count  = mysqli_num_rows($quizzes);
+
+/* === VIDEO PROGRESS (avg % watched across this course's videos) === */
+$video_progress_query = mysqli_query($conn, "
+    SELECT IFNULL(AVG(vp.watched_percentage), 0) AS progress
+    FROM video_progress vp
+    JOIN course_contents cc ON cc.id = vp.content_id
+    WHERE vp.user_id = $user_id AND cc.course_id = $course_id
+");
+$video_progress = 0;
+if ($video_progress_query) $video_progress = (int)round(mysqli_fetch_assoc($video_progress_query)['progress'] ?? 0);
+
+/* === NOTE PROGRESS (% of this course's notes marked "completed") === */
+$note_progress_query = mysqli_query($conn, "
+    SELECT
+        (SELECT COUNT(*) FROM notes WHERE course_id = $course_id) AS total_notes,
+        (SELECT COUNT(*) FROM note_progress np
+            JOIN notes n ON n.id = np.note_id
+            WHERE np.user_id = $user_id AND n.course_id = $course_id AND np.completed = 1) AS done_notes
+");
+$np_row = mysqli_fetch_assoc($note_progress_query);
+$note_progress = ((int)($np_row['total_notes'] ?? 0) > 0)
+    ? (int)round(((int)$np_row['done_notes'] / (int)$np_row['total_notes']) * 100)
+    : 0;
+
+/* === Per-note viewed state (so the page can render existing watched-bars) === */
+$note_progress_map = [];
+$npstmt = $conn->prepare("
+    SELECT np.note_id, np.seconds_viewed, np.completed
+    FROM note_progress np
+    JOIN notes n ON n.id = np.note_id
+    WHERE np.user_id = ? AND n.course_id = ?
+");
+$npstmt->bind_param("ii", $user_id, $course_id);
+$npstmt->execute();
+$npres = $npstmt->get_result();
+while ($row = $npres->fetch_assoc()) {
+    $note_progress_map[(int)$row['note_id']] = [
+        'seconds'   => (int)$row['seconds_viewed'],
+        'completed' => (int)$row['completed'],
+    ];
+}
+$npstmt->close();
+
+/* === OVERALL PROGRESS — weighted blend of videos + notes ===
+   If a course has both videos and notes, videos count for 70% of the
+   progress bar and notes for 30%. If a course only has one type of
+   content, that type alone determines progress. */
+if ($video_count > 0 && $note_count > 0) {
+    $progress = (int)round($video_progress * 0.7 + $note_progress * 0.3);
+} elseif ($video_count > 0) {
+    $progress = $video_progress;
+} elseif ($note_count > 0) {
+    $progress = $note_progress;
+} else {
+    $progress = 0;
+}
+
+/* === RATING === */
+$rating_query = mysqli_query($conn, "SELECT ROUND(AVG(rating),1) AS avg_rating, COUNT(*) AS total FROM course_reviews WHERE course_id = $course_id");
+$rating_data  = mysqli_fetch_assoc($rating_query);
+$avg_rating   = $rating_data['avg_rating'] ?? 0;
+$total_ratings = $rating_data['total'] ?? 0;
 
 /* === BASE URL for videos — fix for XAMPP === */
 $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
@@ -340,7 +424,7 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 img { display: block; max-width: 100%; }
 
-/* ── LAYOUT ── */
+/* - LAYOUT - */
 .page-wrap {
     max-width: 1180px;
     margin: 0 auto;
@@ -395,7 +479,7 @@ img { display: block; max-width: 100%; }
 .hero-stats strong { color: #fff; }
 .stars { color: #fcd34d; letter-spacing: 0px; font-size: 15px; }
 
-/* ── GRID ── */
+/* - GRID - */
 .main-grid {
     display: grid;
     grid-template-columns: 1fr 320px;
@@ -404,7 +488,7 @@ img { display: block; max-width: 100%; }
 }
 @media (max-width: 860px) { .main-grid { grid-template-columns: 1fr; } }
 
-/* ── CARD ── */
+/* - CARD - */
 .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -428,7 +512,7 @@ img { display: block; max-width: 100%; }
     font-weight: 500;
 }
 
-/* ── FLASH ── */
+/* - FLASH - */
 .flash {
     background: var(--green-lt); color: var(--green);
     border: 1px solid rgba(22,163,74,0.25);
@@ -438,7 +522,7 @@ img { display: block; max-width: 100%; }
     font-weight: 600;
 }
 
-/* ── PROGRESS ── */
+/* - PROGRESS - */
 .progress-wrap { padding: 20px 22px; }
 .progress-numbers { display: flex; align-items: baseline; gap: 6px; margin-bottom: 12px; }
 .progress-numbers .big { font-size: 34px; font-weight: 700; color: var(--green); }
@@ -456,8 +540,12 @@ img { display: block; max-width: 100%; }
     transition: width 1s ease;
 }
 .progress-label { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.progress-breakdown {
+    display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--muted);
+}
+.progress-breakdown span strong { color: var(--text); }
 
-/* ── VIDEO GRID ── */
+/* - VIDEO GRID - */
 .video-row {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -516,7 +604,7 @@ img { display: block; max-width: 100%; }
 }
 .video-watched-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; }
 
-/* ── MAIN PLAYER ── */
+/* - MAIN PLAYER - */
 #player-wrap {
     display: none;
     margin: 0 22px 0;
@@ -538,7 +626,65 @@ img { display: block; max-width: 100%; }
 }
 #player-title.active { display: block; }
 
-/* ── NOTES ── */
+/* - NOTE VIEWER - */
+#note-viewer-wrap {
+    display: none;
+    margin: 0 22px 18px;
+}
+#note-viewer-wrap.active { display: block; }
+#note-viewer-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 4px 12px;
+    font-size: 13px; color: var(--muted);
+}
+#note-viewer-title { font-weight: 700; color: var(--text); }
+#note-viewer-timer {
+    font-weight: 600; color: var(--accent);
+}
+#note-viewer {
+    width: 100%;
+    height: 620px;
+    border: 1px solid var(--border-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    background: #fff;
+}
+.note-close-btn {
+    background: var(--surface2); border: 1px solid var(--border-md);
+    color: var(--muted); border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; cursor: pointer; font-weight: 600;
+}
+.note-close-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* - TEXT NOTE VIEWER (for notes with no PDF, just typed content) - */
+#text-note-wrap {
+    display: none;
+    margin: 0 22px 18px;
+}
+#text-note-wrap.active { display: block; }
+#text-note-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 4px 12px;
+    font-size: 13px; color: var(--muted);
+}
+#text-note-title { font-weight: 700; color: var(--text); }
+#text-note-timer { font-weight: 600; color: var(--accent); }
+#text-note-body {
+    max-height: 620px;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 26px 30px;
+    font-size: 14.5px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* - NOTES - */
 .note-list { padding: 6px 22px 18px; }
 .note-item {
     display: flex; align-items: center; justify-content: space-between;
@@ -554,8 +700,13 @@ img { display: block; max-width: 100%; }
     font-size: 18px;
     border: 1px solid var(--border);
 }
-.note-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.note-name { font-size: 14px; font-weight: 600; color: var(--text); display:flex; align-items:center; gap:6px; }
+.note-name .note-done-badge {
+    font-size: 10px; font-weight: 700; color: var(--green);
+    background: var(--green-lt); padding: 1px 8px; border-radius: 10px;
+}
 .note-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.note-watched-wrap { margin-top: 8px; width: 150px; }
 
 .btn-outline {
     display: inline-flex; align-items: center; gap: 6px;
@@ -568,7 +719,7 @@ img { display: block; max-width: 100%; }
 }
 .btn-outline:hover { background: var(--accent-lt); border-color: var(--accent); text-decoration: none; }
 
-/* ── QUIZZES ── */
+/* - QUIZZES - */
 .quiz-list { padding: 6px 22px 18px; }
 .quiz-item {
     display: flex; align-items: center; justify-content: space-between;
@@ -601,7 +752,7 @@ img { display: block; max-width: 100%; }
     text-decoration: none; color: #fff;
 }
 
-/* ── QUIZ STATS GRID (sidebar widget) ── */
+/* - QUIZ STATS GRID (sidebar widget) - */
 .quiz-stats-grid {
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 10px; padding: 18px 22px;
@@ -621,7 +772,7 @@ img { display: block; max-width: 100%; }
 .quiz-stat-box .val { font-size: 20px; font-weight: 700; color: var(--text); }
 .quiz-stat-box .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 500; }
 
-/* ── ACTIVITY ITEMS (history / achievements / certs) ── */
+/* - ACTIVITY ITEMS (history / achievements / certs) - */
 .activity-item {
     padding: 12px 14px;
     border-radius: 10px;
@@ -636,7 +787,7 @@ img { display: block; max-width: 100%; }
 .activity-item p    { font-weight: 600; font-size: 0.9rem; color: var(--text); margin-bottom: 2px; }
 .activity-item span { color: var(--muted); font-size: 0.8rem; }
 
-/* ── SIDEBAR STATS ── */
+/* - SIDEBAR STATS - */
 .stat-grid {
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 10px; padding: 18px 22px;
@@ -650,7 +801,7 @@ img { display: block; max-width: 100%; }
 .stat-box .val { font-size: 22px; font-weight: 700; color: var(--accent); }
 .stat-box .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 500; }
 
-/* ── RATING ── */
+/* - RATING - */
 .rating-section { padding: 14px 22px 22px; }
 .rating-current {
     display: flex; align-items: center; gap: 12px;
@@ -696,7 +847,7 @@ img { display: block; max-width: 100%; }
 }
 .review-toast.show { display: block; }
 
-/* ── INSTRUCTOR ── */
+/* - INSTRUCTOR - */
 .instructor-card {
     display: flex; align-items: center; gap: 14px;
     padding: 18px 22px;
@@ -712,12 +863,12 @@ img { display: block; max-width: 100%; }
 .instructor-name { font-weight: 700; font-size: 15px; color: var(--text); }
 .instructor-role { font-size: 12px; color: var(--muted); font-weight: 500; }
 
-/* ── EMPTY ── */
+/* - EMPTY - */
 .empty { padding: 36px 22px; text-align: center; color: var(--muted); font-size: 14px; }
 .empty-icon { font-size: 34px; margin-bottom: 8px; opacity: 0.45; }
 .empty p { margin-top: 6px; }
 
-/* ── VIDEO ERROR NOTICE ── */
+/* - VIDEO ERROR NOTICE - */
 .video-error {
     background: #fef2f2; color: #991b1b;
     border: 1px solid #fecaca;
@@ -727,7 +878,7 @@ img { display: block; max-width: 100%; }
 }
 .video-error.show { display: block; }
 
-/* ── QUIZ MODAL ── */
+/* - QUIZ MODAL - */
 .modal-overlay {
     display: none;
     position: fixed; inset: 0;
@@ -906,27 +1057,75 @@ img { display: block; max-width: 100%; }
             <span class="count"><?= $note_count ?> files</span>
         </div>
 
+        <!-- Inline note viewer (PDF) -->
+        <div id="note-viewer-wrap">
+            <div id="note-viewer-toolbar">
+                <span id="note-viewer-title"></span>
+                <span>
+                    <span id="note-viewer-timer">00:00</span>
+                    <button class="note-close-btn" onclick="closeNote()" style="margin-left:10px;">✕ Close</button>
+                </span>
+            </div>
+            <iframe id="note-viewer" src=""></iframe>
+        </div>
+
+        <!-- Inline note viewer (plain text content) -->
+        <div id="text-note-wrap">
+            <div id="text-note-toolbar">
+                <span id="text-note-title"></span>
+                <span>
+                    <span id="text-note-timer">00:00</span>
+                    <button class="note-close-btn" onclick="closeTextNote()" style="margin-left:10px;">✕ Close</button>
+                </span>
+            </div>
+            <div id="text-note-body"></div>
+        </div>
+
         <?php if (mysqli_num_rows($notes) > 0):
             mysqli_data_seek($notes, 0);
         ?>
         <div class="note-list">
-            <?php while ($note = mysqli_fetch_assoc($notes)): ?>
-            <div class="note-item">
+            <?php while ($note = mysqli_fetch_assoc($notes)):
+                $nid = (int)$note['id'];
+                $npstate = $note_progress_map[$nid] ?? ['seconds' => 0, 'completed' => 0];
+                $npct = min(100, (int)round(($npstate['seconds'] / 30) * 100));
+                $has_pdf  = !empty($note['file_path']);
+                $has_text = !$has_pdf && trim((string)($note['content'] ?? '')) !== '';
+            ?>
+            <div class="note-item" data-note-id="<?= $nid ?>">
                 <div class="note-item-left">
                     <div class="note-icon">📄</div>
                     <div>
-                        <div class="note-name"><?= htmlspecialchars($note['title']) ?></div>
+                        <div class="note-name">
+                            <?= htmlspecialchars($note['title']) ?>
+                            <?php if ($npstate['completed']): ?>
+                                <span class="note-done-badge">✓ Read</span>
+                            <?php endif; ?>
+                        </div>
                         <?php if (!empty($note['content'])): ?>
                             <div class="note-sub"><?= htmlspecialchars(mb_substr($note['content'], 0, 60)) ?>…</div>
                         <?php endif; ?>
+                        <?php if ($has_pdf || $has_text): ?>
+                        <div class="note-watched-wrap">
+                            <div class="video-watched">
+                                <div class="video-watched-fill" style="width:<?= $npct ?>%" id="nw-<?= $nid ?>"></div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
-                <?php if (!empty($note['file_path'])): ?>
-                    <a class="btn-outline"
-                       href="?id=<?= $course_id ?>&note=<?= (int)$note['id'] ?>"
-                       target="_blank">
+                <?php if ($has_pdf): ?>
+                    <button type="button" class="btn-outline"
+                            onclick="openNote(<?= $nid ?>, '?id=<?= $course_id ?>&note=<?= $nid ?>', '<?= htmlspecialchars($note['title'], ENT_QUOTES) ?>')">
                        📥 Open PDF
-                    </a>
+                    </button>
+                <?php elseif ($has_text): ?>
+                    <button type="button" class="btn-outline"
+                            data-note-text="<?= htmlspecialchars($note['content'], ENT_QUOTES) ?>"
+                            data-note-title="<?= htmlspecialchars($note['title'], ENT_QUOTES) ?>"
+                            onclick="openTextNote(<?= $nid ?>, this.dataset.noteText, this.dataset.noteTitle)">
+                       📖 Open Text
+                    </button>
                 <?php endif; ?>
             </div>
             <?php endwhile; ?>
@@ -1037,6 +1236,12 @@ img { display: block; max-width: 100%; }
                     🎉 You've completed this course!
                 <?php endif; ?>
             </p>
+            <?php if ($video_count > 0 && $note_count > 0): ?>
+            <div class="progress-breakdown">
+                <span>🎬 Videos: <strong><?= $video_progress ?>%</strong></span>
+                <span>📄 Notes: <strong><?= $note_progress ?>%</strong></span>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -1139,12 +1344,13 @@ img { display: block; max-width: 100%; }
 </div>
 
 <script>
-/* ─── DATA FOR QUIZ MODAL (scoped to this course) ─── */
+/* -─ DATA FOR QUIZ MODAL (scoped to this course) -─ */
 const ALL_QUIZZES   = <?= json_encode($all_quizzes,   JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>;
 const ALL_QUESTIONS = <?= json_encode($all_questions, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>;
 const CSRF_TOKEN    = <?= $csrf_js ?>;
+const NOTE_COMPLETE_SECONDS = 30; /* keep in sync with PHP threshold */
 
-/* ─── VIDEO PLAYER ─── */
+/* -─ VIDEO PLAYER -─ */
 const mainVideo   = document.getElementById('main-video');
 const playerWrap  = document.getElementById('player-wrap');
 const playerTitle = document.getElementById('player-title');
@@ -1198,7 +1404,130 @@ function saveProgress(cid, pct) {
     });
 }
 
-/* ─── STAR RATING ─── */
+/* -─ NOTE VIEWER (inline PDF + time tracking) -─ */
+const noteViewerWrap  = document.getElementById('note-viewer-wrap');
+const noteViewerFrame = document.getElementById('note-viewer');
+const noteViewerTitle = document.getElementById('note-viewer-title');
+const noteViewerTimer = document.getElementById('note-viewer-timer');
+
+let noteTimerHandle = null;
+let noteSeconds     = 0;
+let currentNoteId   = null;
+
+function openNote(noteId, url, title) {
+    /* stop tracking whatever note was open before (PDF or text) */
+    stopNoteTracking();
+    if (typeof closeTextNote === 'function') closeTextNote();
+
+    currentNoteId = noteId;
+    noteSeconds   = 0;
+
+    noteViewerFrame.src = url;
+    noteViewerTitle.textContent = '📄 ' + title;
+    noteViewerTimer.textContent = '00:00';
+    noteViewerWrap.classList.add('active');
+    noteViewerWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    /* register the "opened" event immediately */
+    saveNoteProgress(noteId, 0);
+
+    noteTimerHandle = setInterval(function () {
+        noteSeconds++;
+        noteViewerTimer.textContent = formatTime(noteSeconds);
+
+        const fill = document.getElementById('nw-' + noteId);
+        if (fill) fill.style.width = Math.min(100, Math.round((noteSeconds / NOTE_COMPLETE_SECONDS) * 100)) + '%';
+
+        /* heartbeat every 5s to avoid hammering the server */
+        if (noteSeconds % 5 === 0) saveNoteProgress(noteId, noteSeconds);
+    }, 1000);
+}
+
+function closeNote() {
+    if (currentNoteId !== null) saveNoteProgress(currentNoteId, noteSeconds);
+    stopNoteTracking();
+    noteViewerWrap.classList.remove('active');
+    noteViewerFrame.src = '';
+    currentNoteId = null;
+}
+
+function stopNoteTracking() {
+    if (noteTimerHandle) clearInterval(noteTimerHandle);
+    noteTimerHandle = null;
+}
+
+function saveNoteProgress(noteId, seconds) {
+    fetch(location.href, {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body   : 'action=save_note_progress&note_id=' + noteId + '&seconds=' + seconds
+    });
+}
+
+function formatTime(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+/* save final note time if the student navigates away mid-read */
+window.addEventListener('beforeunload', function () {
+    if (currentNoteId !== null) saveNoteProgress(currentNoteId, noteSeconds);
+    if (currentTextNoteId !== null) saveNoteProgress(currentTextNoteId, textNoteSeconds);
+});
+
+/* -─ TEXT NOTE VIEWER (notes with typed content, no PDF) -─ */
+const textNoteWrap  = document.getElementById('text-note-wrap');
+const textNoteBody   = document.getElementById('text-note-body');
+const textNoteTitle  = document.getElementById('text-note-title');
+const textNoteTimer  = document.getElementById('text-note-timer');
+
+let textNoteTimerHandle = null;
+let textNoteSeconds     = 0;
+let currentTextNoteId   = null;
+
+function openTextNote(noteId, content, title) {
+    /* close any other open viewer (PDF or text) first */
+    closeNote();
+    stopTextNoteTracking();
+
+    currentTextNoteId = noteId;
+    textNoteSeconds   = 0;
+
+    textNoteBody.textContent = content;
+    textNoteTitle.textContent = '📖 ' + title;
+    textNoteTimer.textContent = '00:00';
+    textNoteWrap.classList.add('active');
+    textNoteWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    /* register the "opened" event immediately */
+    saveNoteProgress(noteId, 0);
+
+    textNoteTimerHandle = setInterval(function () {
+        textNoteSeconds++;
+        textNoteTimer.textContent = formatTime(textNoteSeconds);
+
+        const fill = document.getElementById('nw-' + noteId);
+        if (fill) fill.style.width = Math.min(100, Math.round((textNoteSeconds / NOTE_COMPLETE_SECONDS) * 100)) + '%';
+
+        if (textNoteSeconds % 5 === 0) saveNoteProgress(noteId, textNoteSeconds);
+    }, 1000);
+}
+
+function closeTextNote() {
+    if (currentTextNoteId !== null) saveNoteProgress(currentTextNoteId, textNoteSeconds);
+    stopTextNoteTracking();
+    textNoteWrap.classList.remove('active');
+    textNoteBody.textContent = '';
+    currentTextNoteId = null;
+}
+
+function stopTextNoteTracking() {
+    if (textNoteTimerHandle) clearInterval(textNoteTimerHandle);
+    textNoteTimerHandle = null;
+}
+
+/* -─ STAR RATING -─ */
 let selectedRating = 5;
 function setRating(val) {
     selectedRating = val;
@@ -1209,7 +1538,7 @@ function setRating(val) {
 }
 setRating(5);
 
-/* ─── SUBMIT REVIEW ─── */
+/* -─ SUBMIT REVIEW -─ */
 function sendReview() {
     const comment = document.getElementById('comment').value.trim();
     fetch(location.href, {
@@ -1231,7 +1560,7 @@ function sendReview() {
     });
 }
 
-/* ─── QUIZ MODAL (take quiz inline, no separate page) ─── */
+/* -─ QUIZ MODAL (take quiz inline, no separate page) -─ */
 let countdown;
 
 document.addEventListener('keydown', function(e) {
