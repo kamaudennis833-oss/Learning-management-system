@@ -31,14 +31,6 @@ header("X-Frame-Options: DENY");
 header("X-Content-Type-Options: nosniff");
 header("Referrer-Policy: no-referrer");
 
-/* NOTE:
-   X-XSS-Protection is deprecated in modern browsers
-   so it is intentionally removed (best practice)
-*/
-
-/* =
-   INIT ERROR
-= */
 $error = "";
 
 /* =
@@ -49,7 +41,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 /* =
-   RATE LIMIT (ANTI SPAM)
+   RATE LIMIT
 = */
 if (!isset($_SESSION['last_register'])) {
     $_SESSION['last_register'] = 0;
@@ -60,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Too many requests. Please wait a few seconds.";
     }
 }
-
 /* =
    PROCESS FORM
 = */
@@ -151,23 +142,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register']) && empty(
                 $passwordRaw,
                 defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT
             );
-
-            /* =
-               OTP GENERATION
-            = */
             $otp = random_int(100000, 999999);
             $created = date("Y-m-d H:i:s");
             $expires = date("Y-m-d H:i:s", strtotime("+10 minutes"));
-
-            /* =
-               INSERT PENDING USER
-            = */
             $insert = $conn->prepare("
                 INSERT INTO pending_students
                 (full_name, email, phone, password, otp, otp_created, otp_expires)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
-
             $insert->bind_param(
                 "sssssss",
                 $name,
@@ -178,16 +160,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register']) && empty(
                 $created,
                 $expires
             );
-
             if ($insert->execute()) {
-
                 if (sendOTP($email, $name, $otp)) {
-
                     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-
                     header("Location: verify.php?email=" . urlencode($email));
                     exit;
-
                 } else {
                     $error = "Unable to send OTP email.";
                 }
@@ -195,13 +172,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register']) && empty(
             } else {
                 $error = "Database error occurred.";
             }
-
             $insert->close();
         }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -218,7 +193,6 @@ body{
     background-size: 400% 400%;
     animation: bg 10s ease infinite;
 }
-
 /* background animation */
 @keyframes bg{
     0%{background-position:0% 50%;}
@@ -236,7 +210,6 @@ body{
     transform: translateY(0);
     transition: 0.3s ease;
 }
-
 .box:hover{
     transform: translateY(-3px);
 }

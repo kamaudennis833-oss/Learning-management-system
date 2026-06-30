@@ -18,7 +18,7 @@ function sendOTP($email, $name, $otp)
         $mail->SMTPAuth = true;
 
         $mail->Username = 'kamaudennis833@gmail.com';
-        $mail->Password = 'sfnf fixe kews irdk'; // ⚠️ use app password
+        $mail->Password = 'sfnf fixe kews irdk'; 
 
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
@@ -31,7 +31,7 @@ function sendOTP($email, $name, $otp)
 
         // CONTENT
         $mail->isHTML(true);
-        $mail->Subject = "Email Verification OTP - LMS";
+        $mail->Subject = "Email Verification OTP - Learn Management System ";
 
         $mail->Body = "
             <div style='font-family:Arial;padding:20px'>

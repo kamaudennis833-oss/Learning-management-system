@@ -124,20 +124,12 @@ if (isset($_POST['verify'])) {
                         $update->execute();
                     } catch (Exception $e) {
                         error_log("OTP attempt-tracking update failed: " . $e->getMessage());
-                        /* Don't crash the page over tracking failure —
-                           the OTP itself is still correctly rejected below. */
                     }
 
                     $msg = "Invalid OTP.";
                 }
-
                 else {
-
-                    /* ====
-                       TRANSACTION START
-                    ==== */
                     $conn->begin_transaction();
-
                     try {
 
                         /* CHECK IF USER EXISTS */
@@ -270,7 +262,7 @@ button{
 <?php if($success): ?>
 
 <p class="success">
-✔ Verification successful. Redirecting...
+ Verification successful. Redirecting...
 </p>
 
 <?php else: ?>

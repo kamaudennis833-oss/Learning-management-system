@@ -190,7 +190,7 @@ if ((float)$course['price'] <= 0) {
 }
 
 /* ===
-   PAID COURSE — START M-PESA STK PUSH
+   PAID COURSE  START M-PESA STK PUSH
 === */
 $errorMessage = null;
 
@@ -206,7 +206,7 @@ if (isset($_POST['pay'])) {
 
     $phone = trim($_POST['phone'] ?? '');
 
-    /* NORMALIZE + VALIDATE PHONE (expects 07XXXXXXXX, 7XXXXXXXX, +254..., or 254...) */
+    /* NORMALIZE + VALIDATE PHONE  */
     if (!$errorMessage) {
         $digits = preg_replace('/\D/', '', $phone);
 
@@ -252,12 +252,9 @@ if (isset($_POST['pay'])) {
             error_log("MPESA token error: " . $tokenCurlErr);
             $errorMessage = "Could not reach M-Pesa right now. Please try again shortly.";
         } else {
-
             $access_token = $tokenResponse->access_token;
-
             $timestamp = date("YmdHis");
             $password  = base64_encode($BusinessShortCode . $Passkey . $timestamp);
-
             $stkData = [
                 "BusinessShortCode" => $BusinessShortCode,
                 "Password"          => $password,
@@ -271,7 +268,6 @@ if (isset($_POST['pay'])) {
                 "AccountReference"  => "COURSE" . $course_id,
                 "TransactionDesc"   => "Course Payment",
             ];
-
             $ch = curl_init(
                 "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
             );
@@ -287,15 +283,12 @@ if (isset($_POST['pay'])) {
             $result   = curl_exec($ch);
             $curlErr  = curl_error($ch);
             curl_close($ch);
-
             $resultData = json_decode($result, true);
 
             if ($curlErr || empty($resultData['CheckoutRequestID'])) {
                 error_log("MPESA STK push error: " . $curlErr . " | " . $result);
                 $errorMessage = "We couldn't start the M-Pesa payment. Please try again.";
             } else {
-
-                /* SAVE PENDING PAYMENT SO THE CALLBACK KNOWS WHAT TO ENROLL */
                 $stmt = $conn->prepare("
                     INSERT INTO payments
                     (
@@ -313,7 +306,6 @@ if (isset($_POST['pay'])) {
                         ?, ?, ?, ?, ?, ?, 'pending', NOW()
                     )
                 ");
-
                 $stmt->bind_param(
                     "iisdss",
                     $user_id,
@@ -323,7 +315,6 @@ if (isset($_POST['pay'])) {
                     $resultData['CheckoutRequestID'],
                     $resultData['MerchantRequestID']
                 );
-
                 if (!$stmt->execute()) {
                     error_log("Failed to save pending payment: " . $stmt->error);
                     $errorMessage = "Payment was started but we couldn't save the record. Contact support.";
@@ -337,7 +328,6 @@ if (isset($_POST['pay'])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -496,8 +486,6 @@ if (isset($_POST['pay'])) {
         </a>
 
     <?php } ?>
-
 </div>
-
 </body>
 </html>

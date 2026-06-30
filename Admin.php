@@ -557,6 +557,12 @@ body {
     color: var(--text);
 }
 
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
 .topbar-right { display: flex; align-items: center; gap: 16px; }
 
 .topbar-icon {
@@ -570,6 +576,30 @@ body {
     transition: .2s;
 }
 .topbar-icon:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Hamburger menu toggle — hidden on desktop, shown on small screens */
+.menu-toggle {
+    display: none;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--bg);
+    align-items: center; justify-content: center;
+    color: var(--text);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    font-size: 16px;
+}
+
+/* Overlay shown behind the sidebar when it's open on mobile */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,.5);
+    z-index: 999;
+}
+.sidebar-overlay.show { display: block; }
 
 .admin-profile {
     display: flex;
@@ -605,6 +635,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-width: 0;
 }
 
 .card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,.1); }
@@ -616,6 +647,7 @@ body {
     border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
     font-size: 20px; color: #fff;
+    flex-shrink: 0;
 }
 
 .c-blue   { background: linear-gradient(135deg,#4f46e5,#818cf8); }
@@ -630,11 +662,12 @@ body {
     padding: 3px 8px;
     border-radius: 20px;
     font-weight: 600;
+    white-space: nowrap;
 }
 .trend-up   { background: #dcfce7; color: #166534; }
 .trend-down { background: #fee2e2; color: #991b1b; }
 
-.card h3 { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+.card h3 { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; word-break: break-word; }
 .card p  { font-size: 13px; color: var(--muted); font-weight: 500; margin: 0; }
 
 /* - CHARTS - */
@@ -651,6 +684,7 @@ body {
     padding: 22px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
+    min-width: 0;
 }
 
 .chart-box h2 {
@@ -702,6 +736,8 @@ body {
     justify-content: space-between;
     padding: 18px 22px 14px;
     border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .table-header h2 {
@@ -715,7 +751,10 @@ body {
 
 .table-header h2 i { color: var(--primary); }
 
-.table-wrap { overflow-x: auto; }
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
 
 table { width: 100%; border-collapse: collapse; }
 
@@ -748,6 +787,7 @@ table tbody tr:hover { background: #fafbff; }
     font-size: 11px;
     font-weight: 600;
     display: inline-block;
+    white-space: nowrap;
 }
 .badge-success, .badge-active, .badge-approved { background: #dcfce7; color: #166534; }
 .badge-warning, .badge-pending, .badge-ongoing  { background: #fef3c7; color: #92400e; }
@@ -807,6 +847,7 @@ table tbody tr:hover { background: #fafbff; }
     justify-content: center;
     align-items: center;
     z-index: 9999;
+    padding: 16px;
 }
 
 .modal-content {
@@ -832,6 +873,7 @@ table tbody tr:hover { background: #fafbff; }
     font-weight: 700;
     margin-bottom: 20px;
     color: var(--text);
+    padding-right: 30px;
 }
 
 .close-modal {
@@ -920,6 +962,7 @@ textarea { resize: vertical; min-height: 90px; }
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
     margin-bottom: 22px;
+    min-width: 0;
 }
 
 .form-card h3 {
@@ -964,6 +1007,7 @@ textarea { resize: vertical; min-height: 90px; }
     text-align: center;
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
+    min-width: 0;
 }
 .mini-stat h2 { font-size: 26px; font-weight: 700; color: var(--primary); }
 .mini-stat p  { font-size: 12px; color: var(--muted); margin-top: 4px; }
@@ -976,36 +1020,105 @@ textarea { resize: vertical; min-height: 90px; }
     flex-wrap: wrap;
 }
 
-/* - RESPONSIVE - */
+/* ===========================================================
+   RESPONSIVE BREAKPOINTS
+   =========================================================== */
+
+/* Tablets / small laptops */
 @media(max-width: 1024px){
     .charts { grid-template-columns: 1fr; }
+    .main { padding: 20px; }
 }
 
+/* Tablets / large phones — sidebar becomes icon rail */
 @media(max-width: 860px){
-    .sidebar { width: 68px; }
-    .logo h2, .logo span, .menu ul li a span, .menu-label { display: none; }
-    .logo-icon { margin: 0 auto; }
-    .logo { justify-content: center; padding: 18px 0; }
-    .menu ul li a { justify-content: center; padding: 14px 0; border-left: none; }
-    .menu ul li a.active, .menu ul li a:hover { border-left: none; border-radius: 0; }
-    .main { margin-left: 68px; width: calc(100% - 68px); padding: 16px; }
-    .badge-pill { display: none; }
+    .sidebar {
+        width: 260px;
+        left: -260px;
+        box-shadow: 4px 0 24px rgba(0,0,0,.25);
+    }
+    .sidebar.open { left: 0; }
+    .logo h2, .logo span, .menu ul li a span, .menu-label { display: block; }
+    .menu ul li a { justify-content: flex-start; }
+
+    .main { margin-left: 0; width: 100%; padding: 16px; }
+    .menu-toggle { display: flex; }
+
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
 }
 
+/* Phones */
 @media(max-width: 600px){
-    .sidebar { display: none; }
-    .main { margin-left: 0; width: 100%; padding: 12px; }
-    .topbar { flex-direction: column; gap: 12px; align-items: flex-start; }
-    .cards { grid-template-columns: repeat(2,1fr); }
+    .main { padding: 12px; }
+
+    .topbar {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 16px;
+    }
+    .topbar-left { gap: 10px; }
+    .topbar h1 { font-size: 18px; }
+    .topbar-right { gap: 8px; }
+    .admin-profile .info { display: none; }
+    .admin-profile { padding: 6px; }
+
+    .cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .card { padding: 14px; gap: 8px; }
+    .card-icon { width: 38px; height: 38px; font-size: 16px; }
+    .card h3 { font-size: 20px; }
+    .card p { font-size: 11.5px; }
+
+    .charts { grid-template-columns: 1fr; gap: 14px; }
+    .chart-box { padding: 16px; }
+    .chart-box canvas { height: 220px !important; }
+
+    .mini-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .mini-stat { padding: 12px; }
+    .mini-stat h2 { font-size: 20px; }
+
+    .actions { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .action-box { padding: 16px; }
+    .action-box .abox-icon { width: 42px; height: 42px; font-size: 18px; margin-bottom: 10px; }
+    .action-box h4 { font-size: 13px; }
+    .action-box p { font-size: 11px; }
+
+    .payment-summary { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .pay-stat { padding: 8px; }
+    .pay-stat strong { font-size: 17px; }
+
+    .table-header { padding: 14px 16px 12px; }
+    .table-header h2 { font-size: 14px; }
+    table th, table td { padding: 10px 12px; font-size: 12.5px; }
+
+    .form-card { padding: 16px; }
+
+    .modal-content { padding: 20px; width: 100%; }
+
+    .bulk-actions { gap: 8px; }
+    .bulk-actions .btn { flex: 1 1 auto; justify-content: center; font-size: 12px; padding: 9px 10px; }
+
+    [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+    [style*="grid-template-columns: repeat(auto-fit,minmax(180px,1fr))"] { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* Very small phones */
+@media(max-width: 380px){
+    .cards { grid-template-columns: 1fr; }
+    .actions { grid-template-columns: 1fr; }
+    .mini-stats { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 </head>
 <body>
 
+<!-- Overlay for mobile sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
 <!-- ====
      SIDEBAR
 === -->
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
     <div class="logo">
         <div class="logo-icon"><i class="fas fa-graduation-cap"></i></div>
         <div>
@@ -1083,7 +1196,10 @@ textarea { resize: vertical; min-height: 90px; }
 <div id="dashboardSection">
 
     <div class="topbar">
-        <h1>Admin Dashboard</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Admin Dashboard</h1>
+        </div>
         <div class="topbar-right">
             <div class="topbar-icon"><i class="fas fa-search"></i></div>
             <div class="topbar-icon"><i class="fas fa-bell"></i></div>
@@ -1351,7 +1467,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="roleSection" style="display:none;">
     <div class="topbar">
-        <h1>Add Teacher</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Add Teacher</h1>
+        </div>
         <div class="topbar-right">
             <div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div>
         </div>
@@ -1383,7 +1502,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="coursesSection" style="display:none;">
     <div class="topbar">
-        <h1>Course Management</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Course Management</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -1398,8 +1520,8 @@ textarea { resize: vertical; min-height: 90px; }
                     <label>Category</label>
                     <select name="category" required>
                         <option value="">Select Category</option>
-                        <option value="web_dev">Web Development</option>
-                        <option value="mobile_dev">Mobile Development</option>
+                        <option value="Course 1">Course 1</option>
+                        <option value="Course 2">Course 2</option>
                         <option value="data_science">Data Science</option>
                         <option value="ui_ux">UI/UX Design</option>
                         <option value="cyber_security">Cyber Security</option>
@@ -1416,16 +1538,30 @@ textarea { resize: vertical; min-height: 90px; }
                     <label>Status</label>
                     <select name="status" required><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
                 </div>
+                  
                 <div class="form-group">
-                    <label>Assign Teacher</label>
-                    <select name="teacher_id" required>
-                        <option value="">Select Teacher</option>
-                        <?php $t_list = mysqli_query($conn,"SELECT id,full_name FROM users WHERE role='teacher'");
-                        while($t = mysqli_fetch_assoc($t_list)): ?>
-                            <option value="<?= (int)$t['id'] ?>"><?= htmlspecialchars($t['full_name']) ?></option>
-                        <?php endwhile; ?>
+                   <label for="teacher_id">Assign Teacher</label>
+
+                     <select name="teacher_id" id="teacher_id" required>
+                       <option value="">Select Teacher</option>
+                 <?php
+                   $teachers = mysqli_query($conn, "SELECT id, full_name FROM users WHERE role='teacher'");
+                   if ($teachers && mysqli_num_rows($teachers) > 0):
+                   while ($t = mysqli_fetch_assoc($teachers)):
+                 ?>
+                <option value="<?= (int)$t['id']; ?>"
+                    <?= ((int)($_POST['teacher_id'] ?? 0) === (int)$t['id']) ? 'selected' : ''; ?>>
+                    <?= htmlspecialchars($t['full_name']); ?>
+                </option>
+                   <?php
+                      endwhile;
+                        else:
+                               ?>
+                 <option value="">No teachers found</option>
+                <?php endif; ?>
                     </select>
                 </div>
+
                 <div class="form-group"><label>Price</label><input type="number" name="price" placeholder="0.00" step="0.01" min="0"></div>
                 <button class="btn btn-primary btn-full" name="create_course">Create Course</button>
             </form>
@@ -1482,7 +1618,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="videoSection" style="display:none;">
     <div class="topbar">
-        <h1>Video Management</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Video Management</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -1562,7 +1701,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="quizeSection" style="display:none;">
     <div class="topbar">
-        <h1>Quiz Management</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Quiz Management</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -1677,7 +1819,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="noteSection" style="display:none;">
     <div class="topbar">
-        <h1>Notes Management</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Notes Management</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -1731,7 +1876,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="announcementSection" style="display:none;">
     <div class="topbar">
-        <h1>Announcements</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Announcements</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -1781,7 +1929,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="enrollmentSection" style="display:none;">
     <div class="topbar">
-        <h1>Enrollment Management</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Enrollment Management</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -1833,7 +1984,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="ticketSection" style="display:none;">
     <div class="topbar">
-        <h1>Support Tickets</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Support Tickets</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -1894,7 +2048,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="paymentSection" style="display:none;">
     <div class="topbar">
-        <h1>Payment Management</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Payment Management</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -1992,7 +2149,10 @@ textarea { resize: vertical; min-height: 90px; }
 ==== -->
 <div id="studentsSection" style="display:none;">
     <div class="topbar">
-        <h1>Student Management</h1>
+        <div class="topbar-left">
+            <div class="menu-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></div>
+            <h1>Student Management</h1>
+        </div>
         <div class="topbar-right"><div class="admin-profile"><div class="info"><h4>System Admin</h4><p>Administrator</p></div></div></div>
     </div>
 
@@ -2048,7 +2208,6 @@ textarea { resize: vertical; min-height: 90px; }
             <table>
                 <thead><tr><th>ID</th><th>Student</th><th>Course</th><th>Status</th><th>Progress</th><th>Enrolled At</th><th>Actions</th></tr></thead>
                 <tbody>
-                <!-- BUG FIX: use $enrollments_data array instead of exhausted result resource -->
                 <?php foreach($enrollments_data as $e): ?>
                     <tr>
                         <td>#<?= (int)$e['id'] ?></td>
@@ -2082,7 +2241,7 @@ textarea { resize: vertical; min-height: 90px; }
     </div>
 </div>
 
-</div><!-- /main -->
+</div>
 
 <!-- RESET PASSWORD MODAL -->
 <div id="resetPasswordModal" class="modal">
@@ -2106,7 +2265,6 @@ const allSections = [
     'noteSection','enrollmentSection','paymentSection','announcementSection',
     'ticketSection','quizeSection','roleSection'
 ];
-
 function showSection(id, link){
     allSections.forEach(s => {
         const el = document.getElementById(s);
@@ -2114,12 +2272,9 @@ function showSection(id, link){
     });
     const target = document.getElementById(id);
     if(target) target.style.display = 'block';
-
-    // Update active link
     document.querySelectorAll('.menu ul li a').forEach(a => a.classList.remove('active'));
     if(link) link.classList.add('active');
     else {
-        // Try to find by onclick attribute
         document.querySelectorAll('.menu ul li a').forEach(a => {
             if(a.getAttribute('onclick') && a.getAttribute('onclick').includes(id)){
                 a.classList.add('active');
@@ -2127,6 +2282,17 @@ function showSection(id, link){
         });
     }
     window.scrollTo({top:0, behavior:'smooth'});
+    closeSidebar();
+}
+
+/* - MOBILE SIDEBAR TOGGLE - */
+function openSidebar(){
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar(){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
 }
 
 /* - MODALS ─ */

@@ -1,12 +1,7 @@
 <?php
 session_start();
 include "db.php";
-
-/* -
-   SECURITY — Admin only
-- */
 if (!isset($_SESSION['user_id'])); 
-/* Confirm the logged-in user is an admin */
 $me = $conn->prepare("SELECT role FROM users WHERE id = ?");
 $me->bind_param("i", $_SESSION['user_id']);
 $me->execute();
@@ -17,30 +12,22 @@ if (!$me_row || $me_row['role'] !== 'admin') {
     http_response_code(403);
     die("Access denied. Admins only.");
 }
-
-/* -
-   CSRF TOKEN
-- */
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 $csrf = $_SESSION['csrf_token'];
-
 /* -
    HANDLE FORM SUBMISSION
 - */
 $message      = '';
-$message_type = 'success'; // or 'error'
+$message_type = 'success'; 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_teacher'])) {
-
-    /* CSRF check */
     if (!hash_equals($csrf, $_POST['csrf_token'] ?? '')) {
         $message      = 'Invalid request token. Please try again.';
         $message_type = 'error';
         goto render;
     }
-
     $course_id  = (int)($_POST['course_id']  ?? 0);
     $teacher_id = (int)($_POST['teacher_id'] ?? 0);
 
@@ -49,7 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_teacher'])) {
         $message_type = 'error';
         goto render;
     }
-
     /* Validate course */
     $cs = $conn->prepare("SELECT id, title FROM courses WHERE id = ?");
     $cs->bind_param("i", $course_id);
@@ -63,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_teacher'])) {
         goto render;
     }
 
-    /* Validate teacher — must be role=teacher in users table */
+    /* Validate teacher */
     $ts = $conn->prepare("SELECT id, full_name FROM users WHERE id = ? AND role = 'teacher'");
     $ts->bind_param("i", $teacher_id);
     $ts->execute();
@@ -113,7 +99,7 @@ render:
 $courses  = mysqli_query($conn, "SELECT id, title FROM courses ORDER BY title ASC");
 $teachers = mysqli_query($conn, "SELECT id, full_name FROM users WHERE role = 'teacher' ORDER BY full_name ASC");
 
-/* Current assignments (for the table) */
+/* Current assignments  */
 $assignments = mysqli_query($conn, "
     SELECT c.title AS course_title, u.full_name AS teacher_name, ct.assigned_at
     FROM course_teachers ct

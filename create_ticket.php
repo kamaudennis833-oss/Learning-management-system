@@ -2,28 +2,16 @@
 session_start();
 include "db.php";
 
-/* =========================
-   CREATE TICKET (FIXED)
-========================= */
-
 if (isset($_POST['submit_ticket'])) {
-
-    /* =========================
+    /* ====
        GET LOGGED IN USER
-    ========================= */
+    ==== */
     $user_id = $_SESSION['user_id'] ?? null;
-
     if (!$user_id) {
         header("Location: login.php");
         exit();
     }
     $user_id = (int) $user_id;
-
-    /* =========================
-       CSRF CHECK
-       (student.php's ticket form already sends this field —
-        this handler was silently ignoring it before.)
-    ========================= */
     if (
         empty($_POST['csrf_token']) ||
         empty($_SESSION['csrf_token']) ||
@@ -32,31 +20,23 @@ if (isset($_POST['submit_ticket'])) {
         http_response_code(403);
         die("Invalid CSRF token. Request blocked.");
     }
-
-    /* =========================
-       INPUT SANITIZATION
-       (trim/strip only — actual SQL safety now comes from
-        prepared statements below, not string escaping)
-    ========================= */
-    $type    = trim(strip_tags($_POST['type']    ?? ''));
+    $type  = trim(strip_tags($_POST['type']    ?? ''));
     $subject = trim(strip_tags($_POST['subject'] ?? ''));
     $message = trim(strip_tags($_POST['message'] ?? ''));
-
     $valid_types = ['academic', 'technical', 'attendance', 'general'];
-
-    /* =========================
+    /* ====
        VALIDATION
-    ========================= */
+    ==== */
     if ($type === '' || $subject === '' || $message === '' || !in_array($type, $valid_types, true)) {
-        $_SESSION['flash']          = "Please fill in all fields with a valid ticket type.";
+        $_SESSION['flash'] = "Please fill in all fields with a valid ticket type.";
         $_SESSION['active_section'] = 'ticket';
         header("Location: student.php");
         exit();
     }
 
-    /* =========================
+    /* ====
        CHECK IF USER EXISTS
-    ========================= */
+    ==== */
     $check = $conn->prepare("SELECT id FROM users WHERE id = ? LIMIT 1");
     $check->bind_param("i", $user_id);
     $check->execute();
@@ -70,9 +50,9 @@ if (isset($_POST['submit_ticket'])) {
         exit();
     }
 
-    /* =========================
-       INSERT TICKET (prepared statement)
-    ========================= */
+    /* ====
+       INSERT TICKET 
+    ==== */
     $stmt = $conn->prepare("
         INSERT INTO tickets (user_id, type, subject, message, status)
         VALUES (?, ?, ?, ?, 'open')
@@ -81,19 +61,17 @@ if (isset($_POST['submit_ticket'])) {
 
     if ($stmt->execute()) {
         $stmt->close();
-        $_SESSION['flash']          = "Ticket submitted successfully. Our team will respond shortly.";
+        $_SESSION['flash'] = "Ticket submitted successfully. Our team will respond shortly.";
         $_SESSION['active_section'] = 'ticket';
         header("Location: student.php");
         exit();
     } else {
         $stmt->close();
-        $_SESSION['flash']          = "Something went wrong while submitting your ticket. Please try again.";
+        $_SESSION['flash'] = "Something went wrong while submitting your ticket. Please try again.";
         $_SESSION['active_section'] = 'ticket';
         header("Location: student.php");
         exit();
     }
 }
-
-/* If this script is reached without submit_ticket set, there's nothing to do here. */
 header("Location: student.php");
 exit();

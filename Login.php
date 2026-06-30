@@ -129,24 +129,32 @@ if (isset($_POST['email']) && isset($_POST['new_password'])) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login System</title>
 
 <style>
+*{
+    box-sizing:border-box;
+}
+
 body{
     margin:0;
     font-family: Arial;
     background: linear-gradient(to right, cornsilk, black);
-    height:100vh;
+    min-height:100vh;
     display:flex;
     justify-content:center;
     align-items:center;
+    padding:20px;
 }
 
 .login-1{
     display:flex;
     background:white;
     width:1100px;
+    max-width:100%;
     height:90vh;
+    max-height:700px;
     border-radius:15px;
     overflow:hidden;
     box-shadow:0 10px 25px rgba(0,0,0,0.3);
@@ -159,12 +167,20 @@ form{
     flex-direction:column;
     justify-content:center;
     gap:20px;
+    min-width:0;
+}
+
+h2{
+    margin:0 0 10px 0;
+    font-size:1.5rem;
 }
 
 input{
     padding:12px;
     border:1px solid #ccc;
     border-radius:8px;
+    width:100%;
+    font-size:1rem;
 }
 
 button{
@@ -172,6 +188,7 @@ button{
     border:none;
     border-radius:8px;
     cursor:pointer;
+    font-size:1rem;
 }
 
 button[type="submit"]{
@@ -197,6 +214,7 @@ button[type="button"]{
     width:100%;
     height:100%;
     object-fit:cover;
+    display:block;
 }
 
 .register-link{
@@ -220,15 +238,22 @@ button[type="button"]{
     background:rgba(0,0,0,0.6);
     justify-content:center;
     align-items:center;
+    padding:20px;
 }
 
 .modal-content{
     background:white;
     padding:25px;
     width:320px;
+    max-width:100%;
     border-radius:12px;
     position:relative;
     text-align:center;
+}
+
+.modal-content form{
+    padding:0;
+    gap:15px;
 }
 
 .close{
@@ -237,6 +262,97 @@ button[type="button"]{
     top:5px;
     font-size:22px;
     cursor:pointer;
+}
+
+/* ======
+   RESPONSIVE
+====== */
+
+/* Tablets */
+@media (max-width: 1024px){
+    .login-1{
+        width:90%;
+        height:auto;
+        max-height:none;
+    }
+
+    .image-box{
+        flex:0.5;
+    }
+
+    form{
+        flex:0.5;
+        padding:25px;
+    }
+}
+
+/* large phones */
+@media (max-width: 768px){
+    .login-1{
+        flex-direction:column;
+        width:100%;
+        height:auto;
+    }
+
+    .image-box{
+        flex:none;
+        height:200px;
+        order:-1;
+    }
+
+    form{
+        flex:none;
+        padding:30px 25px;
+    }
+
+    h2{
+        text-align:center;
+    }
+}
+
+/* Phones */
+@media (max-width: 480px){
+    body{
+        padding:10px;
+    }
+
+    .login-1{
+        border-radius:10px;
+    }
+
+    .image-box{
+        height:140px;
+    }
+
+    form{
+        padding:20px 15px;
+        gap:15px;
+    }
+
+    h2{
+        font-size:1.3rem;
+    }
+
+    input, button{
+        padding:10px;
+        font-size:0.95rem;
+    }
+
+    .modal-content{
+        width:90%;
+        padding:20px;
+    }
+}
+
+/*small phones */
+@media (max-width: 320px){
+    h2{
+        font-size:1.1rem;
+    }
+
+    .image-box{
+        height:110px;
+    }
 }
 </style>
 
@@ -270,7 +386,7 @@ button[type="button"]{
 </form>
 
 <div class="image-box">
-    <img src="webpage.jpg">
+    <img src="webpage.jpg" alt="Login illustration">
 </div>
 
 </div>
